@@ -17,6 +17,8 @@ dependencies {
   compile localGroovy()
   
   shell_class_loader 'jline:jline:0.9.94'
+  
+  compile 'io.netty:netty:3.6.5.Final'
 }
 
 /*
