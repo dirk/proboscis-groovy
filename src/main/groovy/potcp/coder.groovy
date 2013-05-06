@@ -9,6 +9,9 @@ import java.util.Scanner
 import groovy.transform.CompileStatic
 
 class Coder {
+  static byte[] COLON  = ":" as byte[]
+  static byte[] PERIOD = "." as byte[]
+  
   @CompileStatic
   static Request decodeRequest(InputStream input) {
     Request req = new Request()
@@ -26,5 +29,16 @@ class Coder {
     input.read(req.data, 0, req.length)
     
     return req
+  }
+  
+  @CompileStatic
+  static void encodeResponse(Response rep, OutputStream o) {
+    o.write(rep.status.toString() as byte[])
+    o.write(COLON)
+    o.write(rep.format as byte[])
+    o.write(COLON)
+    o.write(rep.data.size().toString() as byte[])
+    o.write(COLON)
+    o.write(rep.data)
   }
 }
