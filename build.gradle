@@ -13,8 +13,8 @@ configurations {
   shell_class_loader
 }
 dependencies {
-  // compile 'org.codehaus.groovy:groovy-all:2.1.3'
-  compile localGroovy()
+  compile 'org.codehaus.groovy:groovy-all:2.1.3'
+  
   
   shell_class_loader 'jline:jline:0.9.94'
   
