@@ -15,10 +15,10 @@ configurations {
 dependencies {
   compile 'org.codehaus.groovy:groovy-all:2.1.3'
   
-  
   shell_class_loader 'jline:jline:0.9.94'
   
-  compile 'io.netty:netty:3.6.5.Final'
+  // compile 'io.netty:netty:3.6.5.Final'
+  testCompile 'junit:junit:4.11'
 }
 
 /*
@@ -63,4 +63,8 @@ task(shell, dependsOn: ':build') {
 
 jar {
   baseName = 'proboscis'
+}
+
+test {
+  testLogging.showStandardStreams = true
 }
