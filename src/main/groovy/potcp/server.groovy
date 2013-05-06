@@ -1,51 +1,93 @@
 package co.langzeit.proboscis.potcp
+import co.langzeit.proboscis.Request
+import co.langzeit.proboscis.Response
 
 import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.Socket
+
+import java.lang.Runnable
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 
-import org.jboss.netty.channel.ChannelFactory
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
-import org.jboss.netty.bootstrap.ServerBootstrap
+import java.io.InputStream
+import java.io.OutputStream
+import java.util.Scanner
 
-import java.net.ServerSocket
+import java.util.HashMap
+
+import groovy.transform.CompileStatic
+
+abstract class Handler {
+  abstract Response call(Request)
+}
 
 class Server {
-  /*
-  private ChannelFactory factory
-  private ServerBootstrap bootstrap
-  
-  Server() {
-    this.factory = new NioServerSocketChannelFactory(
-      Executors.newCachedThreadPool(), Executors.newCachedThreadPool()
-    )
-    this.bootstrap = new ServerBootstrap(factory)
-    this.bootstrap.setOption("child.tcpNoDelay", true)
-    this.bootstrap.setOption("child.keepAlive",  true)
-  }
-  
-  void bind(InetSocketAddress addr) {
-    this.bootstrap.bind(addr)
-    System.out.println("Listening...")
-  }
-  */
-  
-  private ExecutorService executors
-  
+  private ExecutorService pool
   private ServerSocket server_socket
+  private HashMap<String, Handler> handlers
   
   Server() {
     this.server_socket = null
-    this.executors = null
+    this.pool          = null
+    this.handlers      = new HashMap<String, Handler>()
   }
   
+  Handler getHandler(String name) {
+    return this.handlers.get(name)
+  }
+  
+  @CompileStatic
   void bind(int port) {
-    this.executors = Executors.newCachedThreadPool()
+    this.pool = Executors.newCachedThreadPool()
+    this.server_socket = new ServerSocket(port)
+    
+    for(;;) {
+      this.pool.execute(new SocketHandler(this, this.server_socket.accept()))
+    }
   }
   
+  @CompileStatic
+  static Response createMethodNotFoundResponse(Request req) {
+    Response rep = new Response()
+    rep.status = 404
+    rep.format = "text"
+    String data_string = "Method ${req.method}.${req.format} not found"
+    rep.data = data_string as byte[]
+    return rep
+  }
+}
+
+class SocketHandler implements Runnable {
+  Server server
+  Socket socket
   
+  SocketHandler(Server server, Socket socket) {
+    this.server = server
+    this.socket = socket
+  }
   
-  
-  
+  @CompileStatic
+  void run() {
+    InputStream  input = this.socket.getInputStream()
+    OutputStream output = this.socket.getOutputStream()
+    
+    Request req = Coder.decodeRequest(input)
+    
+    System.out.println(req)
+    
+    Response rep
+    
+    Handler handler = this.server.getHandler(req.method+"."+req.format)
+    if(handler == null) {
+      rep = this.server.createMethodNotFoundResponse(req)
+    } else {
+      rep = handler.call(req)
+    }
+    
+    Coder.encodeResponse(rep, output)
+    
+    this.socket.close()
+  }
 }
 
