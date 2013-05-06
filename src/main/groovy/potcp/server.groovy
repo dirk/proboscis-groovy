@@ -19,7 +19,9 @@ import java.util.HashMap
 import groovy.transform.CompileStatic
 
 abstract class Handler {
-  abstract Response call(Request)
+  abstract String getMethod()
+  abstract String getFormat()
+  abstract Response call(Request req)
 }
 
 class Server {
@@ -33,8 +35,14 @@ class Server {
     this.handlers      = new HashMap<String, Handler>()
   }
   
+  @CompileStatic
   Handler getHandler(String name) {
     return this.handlers.get(name)
+  }
+  
+  @CompileStatic
+  void register(Handler handler) {
+    this.handlers.put(handler.getMethod()+"."+handler.getFormat(), handler)
   }
   
   @CompileStatic
@@ -90,4 +98,3 @@ class SocketHandler implements Runnable {
     this.socket.close()
   }
 }
-
