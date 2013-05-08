@@ -12,9 +12,9 @@ import java.util.concurrent.ExecutorService
 
 import java.io.InputStream
 import java.io.OutputStream
-import java.util.Scanner
 
-import java.util.HashMap
+import java.util.Map
+import java.util.concurrent.ConcurrentHashMap
 
 import groovy.transform.CompileStatic
 
@@ -27,22 +27,23 @@ abstract class Handler {
 class Server {
   private ExecutorService pool
   private ServerSocket server_socket
-  private HashMap<String, Handler> handlers
+  private Map<String, Handler> handlers
   
   Server() {
     this.server_socket = null
     this.pool          = null
-    this.handlers      = new HashMap<String, Handler>()
+    this.handlers      = new ConcurrentHashMap<String, Handler>()
   }
   
   @CompileStatic
-  Handler getHandler(String name) {
-    return this.handlers.get(name)
+  Handler getHandler(String signature) {
+    return this.handlers.get(signature)
   }
   
   @CompileStatic
   void register(Handler handler) {
-    this.handlers.put(handler.getMethod()+"."+handler.getFormat(), handler)
+    String signature = handler.getMethod()+"."+handler.getFormat()
+    this.handlers.put(signature, handler)
   }
   
   @CompileStatic
@@ -82,10 +83,7 @@ class SocketHandler implements Runnable {
     
     Request req = Coder.decodeRequest(input)
     
-    System.out.println(req)
-    
     Response rep
-    
     Handler handler = this.server.getHandler(req.method+"."+req.format)
     if(handler == null) {
       rep = this.server.createMethodNotFoundResponse(req)
@@ -94,7 +92,6 @@ class SocketHandler implements Runnable {
     }
     
     Coder.encodeResponse(rep, output)
-    
     this.socket.close()
   }
 }
